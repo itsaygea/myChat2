@@ -1466,4 +1466,7 @@ Your old database can still be recovered, please contact the plugin author for h
     <data name="ChatExport_Initial" xml:space="preserve">
         <value>Loading logs ...</value>
     </data>
+    <data name="Options_Tabs_SupportInput" xml:space="preserve">
+        <value>Show Input Area</value>
+    </data>
 </root>

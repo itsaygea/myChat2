@@ -288,10 +288,10 @@ public class DbViewer : Window
                 ImGuiUtil.Tooltip(message.Code.Type.Name());
 
             ImGui.TableNextColumn();
-            Plugin.ChatLogWindow.DrawChunks(message.Sender);
+            Plugin.ChatLog.DrawChunks(message.Sender);
 
             ImGui.TableNextColumn();
-            Plugin.ChatLogWindow.DrawChunks(message.Content);
+            Plugin.ChatLog.DrawChunks(message.Content);
         }
     }
 
@@ -571,21 +571,21 @@ public class DbViewer : Window
             }
 
             var color = text.Foreground;
-            if (color == null && text.FallbackColour != null)
+            if (color == null && text.FallbackColor != null)
             {
-                var type = text.FallbackColour.Value;
+                var type = text.FallbackColor.Value;
                 color = Plugin.Config.ChatColours.TryGetValue(type, out var col) ? col : type.DefaultColor();
             }
 
             color ??= 0;
 
             var userContent = text.Content;
-            if (Plugin.ChatLogWindow.ScreenshotMode)
+            if (Plugin.ChatLog.ScreenshotMode)
             {
                 if (chunk.Link is PlayerPayload playerPayload)
-                    userContent = Plugin.ChatLogWindow.HidePlayerInString(userContent, playerPayload.PlayerName, playerPayload.World.RowId);
+                    userContent = Plugin.ChatLog.HidePlayerInString(userContent, playerPayload.PlayerName, playerPayload.World.RowId);
                 else if (Plugin.PlayerState.IsLoaded)
-                    userContent = Plugin.ChatLogWindow.HidePlayerInString(userContent, Plugin.PlayerState.CharacterName, Plugin.PlayerState.HomeWorld.RowId);
+                    userContent = Plugin.ChatLog.HidePlayerInString(userContent, Plugin.PlayerState.CharacterName, Plugin.PlayerState.HomeWorld.RowId);
             }
 
             var isNotUrl = text.Link is not UriPayload;

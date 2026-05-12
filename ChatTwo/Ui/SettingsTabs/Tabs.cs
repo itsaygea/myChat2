@@ -8,7 +8,7 @@ using Dalamud.Game.ClientState.Objects.SubKinds;
 
 namespace ChatTwo.Ui.SettingsTabs;
 
-internal sealed class Tabs : ISettingsTab
+public sealed class Tabs : ISettingsTab
 {
     private readonly Plugin Plugin;
     private Configuration Mutable { get; }
@@ -17,7 +17,7 @@ internal sealed class Tabs : ISettingsTab
 
     private int ToOpen = -2;
 
-    internal Tabs(Plugin plugin, Configuration mutable)
+    public Tabs(Plugin plugin, Configuration mutable)
     {
         Plugin = plugin;
         Mutable = mutable;
@@ -93,6 +93,8 @@ internal sealed class Tabs : ISettingsTab
             if (tab.PopOut)
             {
                 using var _ = ImRaii.PushIndent(10.0f);
+                ImGui.Checkbox(Language.Options_Tabs_SupportInput, ref tab.SupportsInput);
+
                 ImGui.Checkbox(Language.Options_Tabs_IndependentOpacity, ref tab.IndependentOpacity);
                 if (tab.IndependentOpacity)
                     ImGuiUtil.DragFloatVertical(Language.Options_Tabs_Opacity, ref tab.Opacity, 0.25f, 0f, 100f, $"{tab.Opacity:N2}%%", ImGuiSliderFlags.AlwaysClamp);

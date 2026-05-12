@@ -3580,6 +3580,15 @@ namespace ChatTwo.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Show Input Area.
+        /// </summary>
+        internal static string Options_Tabs_SupportInput {
+            get {
+                return ResourceManager.GetString("Options_Tabs_SupportInput", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Tabs.
         /// </summary>
         internal static string Options_Tabs_Tab {

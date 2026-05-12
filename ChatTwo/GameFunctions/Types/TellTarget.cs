@@ -36,5 +36,7 @@ public class TellTarget
     }
 
     public static TellTarget Empty() => new(string.Empty, 0, 0, TellReason.Direct);
-    public static TellTarget From(TellTarget t) => new(t.Name, t.World, t.ContentId, t.Reason);
+
+    public TellTarget Clone()
+        => new(Name, World, ContentId, Reason);
 }

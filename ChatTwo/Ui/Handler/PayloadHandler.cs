@@ -1,7 +1,6 @@
 using System.Numerics;
 using ChatTwo.Code;
 using ChatTwo.Resources;
-using ChatTwo.Ui;
 using ChatTwo.Util;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
@@ -20,17 +19,18 @@ using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Dalamud.Bindings.ImGui;
 using Lumina.Excel.Sheets;
+
 using Action = System.Action;
 using DalamudPartyFinderPayload = Dalamud.Game.Text.SeStringHandling.Payloads.PartyFinderPayload;
 using ChatTwoPartyFinderPayload = ChatTwo.Util.PartyFinderPayload;
 
-namespace ChatTwo;
+namespace ChatTwo.Ui.Handler;
 
 public sealed class PayloadHandler
 {
     private const string PopupId = "chat2-context-popup";
 
-    private ChatLogWindow LogWindow { get; }
+    private ChatLog.ChatLog ChatLog { get; }
     private (Chunk, Payload?)? Popup { get; set; }
 
     public bool HandleTooltips;
@@ -40,12 +40,12 @@ public sealed class PayloadHandler
 
     private const uint PopupSfx = 1;
 
-    internal PayloadHandler(ChatLogWindow logWindow)
+    public PayloadHandler(ChatLog.ChatLog chatLog)
     {
-        LogWindow = logWindow;
+        ChatLog = chatLog;
     }
 
-    internal void Draw()
+    public void Draw()
     {
         DrawPopups();
 
@@ -100,7 +100,7 @@ public sealed class PayloadHandler
 
     private void Integrations(Chunk chunk, Payload? payload)
     {
-        var registered = LogWindow.Plugin.Ipc.Registered;
+        var registered = ChatLog.Plugin.Ipc.Registered;
         if (registered.Count == 0)
             return;
 
@@ -118,7 +118,7 @@ public sealed class PayloadHandler
         {
             try
             {
-                LogWindow.Plugin.Ipc.Invoke(id, sender, contentId, payload, chunk.Message?.SenderSource, chunk.Message?.ContentSource);
+                ChatLog.Plugin.Ipc.Invoke(id, sender, contentId, payload, chunk.Message?.SenderSource, chunk.Message?.ContentSource);
             }
             catch (Exception ex)
             {
@@ -151,11 +151,11 @@ public sealed class PayloadHandler
         }
 
         // ScreenshotMode changed, so we inform the webinterface about the new message format
-        if (ImGui.Checkbox(Language.Context_ScreenshotMode, ref LogWindow.ScreenshotMode))
-            LogWindow.Plugin.ServerCore.SendBulkMessageList();
+        if (ImGui.Checkbox(Language.Context_ScreenshotMode, ref ChatLog.ScreenshotMode))
+            ChatLog.Plugin.ServerCore.SendBulkMessageList();
 
         if (ImGui.Selectable(Language.Context_HideChat))
-            LogWindow.UserHide();
+            ChatLog.UserHide();
 
         if (chunk.Message is { } message)
         {
@@ -192,7 +192,7 @@ public sealed class PayloadHandler
             .Aggregate(string.Concat);
     }
 
-    internal unsafe void Click(Chunk chunk, Payload? payload, ImGuiMouseButton button)
+    public unsafe void Click(Chunk chunk, Payload? payload, ImGuiMouseButton button)
     {
         if (Plugin.Config.PlaySounds)
             UIGlobals.PlaySoundEffect(PopupSfx);
@@ -208,7 +208,7 @@ public sealed class PayloadHandler
         }
     }
 
-    internal void Hover(Payload payload)
+    public void Hover(Payload payload)
     {
         var hoverSize = 350f * ImGuiHelpers.GlobalScale;
 
@@ -250,7 +250,7 @@ public sealed class PayloadHandler
 
         using (ImRaii.Tooltip())
         using (ImRaii.TextWrapPos(0.0f))
-        using (ImRaii.PushColor(ImGuiCol.Text, LogWindow.DefaultText))
+        using (ImRaii.PushColor(ImGuiCol.Text, ChatLog.InputHandler.DefaultText))
             inside();
     }
 
@@ -260,7 +260,7 @@ public sealed class PayloadHandler
         if (!Plugin.GameConfig.TryGet(UiControlOption.DetailTrackingType, out uint selected) || selected != 0)
             return;
 
-        if (LogWindow.LastViewport != ImGuiHelpers.MainViewport.Handle)
+        if (ChatLog.LastViewport != ImGuiHelpers.MainViewport.Handle)
             return;
 
         var atk = args.Addon;
@@ -278,7 +278,7 @@ public sealed class PayloadHandler
         var atkPos = new Vector2(component.ScreenX, component.ScreenY);
         var atkSize = new Vector2(component.GetWidth() * component.ScaleX, component.GetHeight() * component.GetScaleY());
 
-        var chatRect = new MathUtil.Rectangle(LogWindow.LastWindowPos, LogWindow.LastWindowSize);
+        var chatRect = new MathUtil.Rectangle(ChatLog.LastWindowPos, ChatLog.LastWindowSize);
         var addonRect = new MathUtil.Rectangle(atkPos, atkSize);
 
         if (!chatRect.HasOverlap(addonRect))
@@ -327,7 +327,7 @@ public sealed class PayloadHandler
         }
 
         // Spawning right/bottom of mouse cursor didn't solve the overlap, so we spawn it next to the chat
-        var x = isLeft ? chatRect.SizeX : LogWindow.LastWindowPos.X - atkSize.X;
+        var x = isLeft ? chatRect.SizeX : ChatLog.LastWindowPos.X - atkSize.X;
         var y = Math.Clamp(chatRect.SizeY - atkSize.Y, 0, float.MaxValue);
         y -= isTop ? 0 : Plugin.Config.TooltipOffset; // offset to prevent cut-off on the bottom
 
@@ -364,11 +364,11 @@ public sealed class PayloadHandler
         }
 
         var name = ChunkUtil.ToChunks(builder.BuiltString, ChunkSource.None, null);
-        LogWindow.DrawChunks(name.ToList());
+        ChatLog.DrawChunks(name.ToList());
         ImGui.Separator();
 
         var desc = ChunkUtil.ToChunks(status.Status.Value.Description.ToDalamudString(), ChunkSource.None, null);
-        LogWindow.DrawChunks(desc.ToList());
+        ChatLog.DrawChunks(desc.ToList());
     }
 
     private void HoverItem(ItemPayload item)
@@ -386,11 +386,11 @@ public sealed class PayloadHandler
             InlineIcon(icon);
 
         var name = ChunkUtil.ToChunks(resolvedItem.Name.ToDalamudString(), ChunkSource.None, null);
-        LogWindow.DrawChunks(name.ToList());
+        ChatLog.DrawChunks(name.ToList());
         ImGui.Separator();
 
         var desc = ChunkUtil.ToChunks(resolvedItem.Description.ToDalamudString(), ChunkSource.None, null);
-        LogWindow.DrawChunks(desc.ToList());
+        ChatLog.DrawChunks(desc.ToList());
     }
 
     private void HoverEventItem(ItemPayload payload)
@@ -402,13 +402,13 @@ public sealed class PayloadHandler
             InlineIcon(icon);
 
         var name = ChunkUtil.ToChunks(itemRow.Name.ToDalamudString(), ChunkSource.None, null);
-        LogWindow.DrawChunks(name.ToList());
+        ChatLog.DrawChunks(name.ToList());
         ImGui.Separator();
 
         if (!Sheets.EventItemHelpSheet.TryGetRow(payload.RawItemId, out var itemHelpRow))
             return;
 
-        LogWindow.DrawChunks(ChunkUtil.ToChunks(itemHelpRow.Description.ToDalamudString(), ChunkSource.None, null).ToList());
+        ChatLog.DrawChunks(ChunkUtil.ToChunks(itemHelpRow.Description.ToDalamudString(), ChunkSource.None, null).ToList());
     }
 
     private void HoverUri(UriPayload uri)
@@ -511,7 +511,7 @@ public sealed class PayloadHandler
         else if (payload.Kind == ItemKind.Collectible)
             name.Payloads.Add(new TextPayload(" "));
 
-        LogWindow.DrawChunks(ChunkUtil.ToChunks(name, ChunkSource.None, null).ToList(), false);
+        ChatLog.DrawChunks(ChunkUtil.ToChunks(name, ChunkSource.None, null).ToList(), false);
         ImGui.Separator();
 
         var realItemId = payload.RawItemId;
@@ -550,7 +550,7 @@ public sealed class PayloadHandler
         if (Plugin.TextureProvider.GetFromGameIcon(new GameIconLookup(item.Icon)).GetWrapOrDefault() is { } icon)
             InlineIcon(icon);
 
-        LogWindow.DrawChunks(ChunkUtil.ToChunks(item.Name.ToDalamudString(), ChunkSource.None, null).ToList(), false);
+        ChatLog.DrawChunks(ChunkUtil.ToChunks(item.Name.ToDalamudString(), ChunkSource.None, null).ToList(), false);
         ImGui.Separator();
 
         var realItemId = payload.RawItemId;
@@ -582,7 +582,7 @@ public sealed class PayloadHandler
             ]);
         }
 
-        LogWindow.DrawChunks(name, false);
+        ChatLog.DrawChunks(name, false);
         ImGui.Separator();
 
         var validContentId = chunk.Message?.ContentId is not (null or 0);
@@ -591,18 +591,18 @@ public sealed class PayloadHandler
             // Eureka, Bozja and Occult need special handling as tells work different
             if (!Sheets.IsInForay())
             {
-                LogWindow.Chat = $"/tell {player.PlayerName}";
+                ChatLog.InputHandler.ChatInput = $"/tell {player.PlayerName}";
                 if (world.Value.IsPublic)
-                    LogWindow.Chat += $"@{world.Value.Name}";
+                    ChatLog.InputHandler.ChatInput += $"@{world.Value.Name}";
 
-                LogWindow.Chat += " ";
+                ChatLog.InputHandler.ChatInput += " ";
             }
             else if (validContentId)
             {
-                LogWindow.Plugin.Functions.Chat.SetEurekaTellChannel(player.PlayerName, world.Value.Name.ToString(), (ushort) world.RowId, 0, chunk.Message!.ContentId, 0, false);
+                ChatLog.Plugin.Functions.Chat.SetEurekaTellChannel(player.PlayerName, world.Value.Name.ToString(), (ushort) world.RowId, 0, chunk.Message!.ContentId, 0, false);
             }
 
-            LogWindow.Activate = true;
+            ChatLog.InputHandler.Activate = true;
         }
 
         if (world.Value.IsPublic)
@@ -649,24 +649,24 @@ public sealed class PayloadHandler
 
             var isFriend = GameFunctions.GameFunctions.GetFriends().Any(friend => friend.NameString == player.PlayerName && friend.HomeWorld == world.RowId);
             if (!isFriend && ImGui.Selectable(Language.Context_SendFriendRequest))
-                LogWindow.Plugin.Functions.SendFriendRequest(player.PlayerName, (ushort) world.RowId);
+                ChatLog.Plugin.Functions.SendFriendRequest(player.PlayerName, (ushort) world.RowId);
 
             using (var menuBlockFunctions = ImRaii.Menu(Language.Context_BlockFunctions))
             {
                 if (menuBlockFunctions.Success)
                 {
                     if (ImGui.Selectable(Language.Context_AddToBlacklist))
-                        LogWindow.Plugin.Functions.AddToBlacklist(player.PlayerName, (ushort)world.RowId);
+                        ChatLog.Plugin.Functions.AddToBlacklist(player.PlayerName, (ushort)world.RowId);
 
                     if (chunk.Message != null)
                     {
                         var message = chunk.Message;
 
                         if (message.AccountId != 0 && ImGui.Selectable(Language.Context_AddToMuteList))
-                            LogWindow.Plugin.Functions.AddToMuteList(message.AccountId, message.ContentId, player.PlayerName, (short) world.RowId);
+                            ChatLog.Plugin.Functions.AddToMuteList(message.AccountId, message.ContentId, player.PlayerName, (short) world.RowId);
 
                         if (ImGui.Selectable(Language.Context_AddToTermsFilter))
-                            LogWindow.Plugin.Functions.AddToTermsList(message.ContentSource);
+                            ChatLog.Plugin.Functions.AddToTermsList(message.ContentSource);
                     }
                 }
             }
@@ -678,8 +678,8 @@ public sealed class PayloadHandler
         var inputChannel = chunk.Message?.Code.Type.ToInputChannel();
         if (inputChannel != null && ImGui.Selectable(Language.Context_ReplyInSelectedChatMode))
         {
-            LogWindow.SetChannel(inputChannel.Value);
-            LogWindow.Activate = true;
+            ChatLog.Plugin.Functions.Chat.SetChannelWithExtraChat(inputChannel.Value);
+            ChatLog.InputHandler.Activate = true;
         }
 
         if (ImGui.Selectable(Language.Context_Target) && FindCharacterForPayload(player) is { } obj)
@@ -745,13 +745,13 @@ public sealed class PayloadHandler
                 break;
         }
 
-        LogWindow.DrawChunks(ChunkUtil.ToChunks(builder.BuiltString, ChunkSource.None, null).ToList(), false);
+        ChatLog.DrawChunks(ChunkUtil.ToChunks(builder.BuiltString, ChunkSource.None, null).ToList(), false);
         ImGui.Separator();
 
         if (ImGui.Selectable(Language.Context_Link))
         {
             GameFunctions.Context.LinkStatus(status.Status.RowId);
-            LogWindow.Chat += " <status>";
+            ChatLog.InputHandler.ChatInput += " <status>";
         }
     }
 }

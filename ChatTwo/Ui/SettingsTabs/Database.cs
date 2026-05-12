@@ -11,14 +11,14 @@ using Dalamud.Game.Text;
 
 namespace ChatTwo.Ui.SettingsTabs;
 
-internal sealed class Database : ISettingsTab
+public sealed class Database : ISettingsTab
 {
     private Plugin Plugin { get; }
     private Configuration Mutable { get; }
 
     public string Name => Language.Options_Database_Tab + "###tabs-database";
 
-    internal Database(Plugin plugin, Configuration mutable)
+    public Database(Plugin plugin, Configuration mutable)
     {
         Plugin = plugin;
         Mutable = mutable;

@@ -178,7 +178,7 @@ public partial class Message
                 {
                     // Add the previous sentence before adding the emote
                     AddChunkWithMessage(text.NewWithStyle(chunk, sentenceBuilder.ToString()));
-                    AddChunkWithMessage(new TextChunk(chunk.Source, EmotePayload.ResolveEmote(word), word) { FallbackColour = text.FallbackColour });
+                    AddChunkWithMessage(new TextChunk(chunk.Source, EmotePayload.ResolveEmote(word), word) { FallbackColor = text.FallbackColor });
 
                     wordUsed = true;
                     sentenceBuilder.Clear();
