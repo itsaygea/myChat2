@@ -287,7 +287,7 @@ public class Tab
 
     public bool Matches(Message message)
     {
-        if (TellTarget.IsSet())
+        if (Channel == InputChannel.Tell && TellTarget.IsSet())
         {
             if (TellTarget.ContentId == 0)
             {
