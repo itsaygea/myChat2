@@ -496,7 +496,7 @@ public sealed class PayloadHandler
         {
             name.AddRange([
                 new IconChunk(ChunkSource.None, null, BitmapFontIcon.CrossWorld),
-                new TextChunk(ChunkSource.None, null, world.Value.Name.ExtractText())
+                new TextChunk(ChunkSource.None, null, world.Value.Name.ToString())
             ]);
         }
 

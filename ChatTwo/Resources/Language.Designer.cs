@@ -2428,6 +2428,24 @@ namespace ChatTwo.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to If gathering and crafting messages are saved to the database, the size of the database will grow much faster, and there will be a noticeable freeze when saving settings. It is recommended to leave this disabled..
+        /// </summary>
+        internal static string Options_DatabaseGatherCraftMessages_Description {
+            get {
+                return ResourceManager.GetString("Options_DatabaseGatherCraftMessages_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Save crafting and gathering messages in database.
+        /// </summary>
+        internal static string Options_DatabaseGatherCraftMessages_Name {
+            get {
+                return ResourceManager.GetString("Options_DatabaseGatherCraftMessages_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Display.
         /// </summary>
         internal static string Options_Display_Tab {

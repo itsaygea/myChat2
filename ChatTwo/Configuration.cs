@@ -83,6 +83,7 @@ public class Configuration : IPluginConfiguration
     public bool ShowTitleBar;
     public bool ShowPopOutTitleBar = true;
     public bool DatabaseBattleMessages;
+    public bool DatabaseGatherCraftMessages;
     public bool LoadPreviousSession;
     public bool FilterIncludePreviousSessions;
     public bool SortAutoTranslate;
@@ -177,6 +178,7 @@ public class Configuration : IPluginConfiguration
         ShowTitleBar = other.ShowTitleBar;
         ShowPopOutTitleBar = other.ShowPopOutTitleBar;
         DatabaseBattleMessages = other.DatabaseBattleMessages;
+        DatabaseGatherCraftMessages = other.DatabaseGatherCraftMessages;
         LoadPreviousSession = other.LoadPreviousSession;
         FilterIncludePreviousSessions = other.FilterIncludePreviousSessions;
         SortAutoTranslate = other.SortAutoTranslate;

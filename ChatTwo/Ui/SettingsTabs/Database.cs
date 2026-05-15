@@ -37,6 +37,7 @@ public sealed class Database : ISettingsTab
             ShowAdvanced = ImGui.GetIO().KeyShift;
 
         ImGuiUtil.OptionCheckbox(ref Mutable.DatabaseBattleMessages, Language.Options_DatabaseBattleMessages_Name, Language.Options_DatabaseBattleMessages_Description);
+        ImGuiUtil.OptionCheckbox(ref Mutable.DatabaseGatherCraftMessages, Language.Options_DatabaseGatherCraftMessages_Name, Language.Options_DatabaseGatherCraftMessages_Description);
         ImGui.Spacing();
 
         if (ImGuiUtil.OptionCheckbox(ref Mutable.LoadPreviousSession, Language.Options_LoadPreviousSession_Name, Language.Options_LoadPreviousSession_Description))

@@ -276,7 +276,9 @@ public class MessageManager : IAsyncDisposable
         var contentChunks = ChunkUtil.ToChunks(pendingMessage.Content, ChunkSource.Content, chatCode.Type).ToList();
         var message = new Message(CurrentContentId, pendingMessage.ContentId, pendingMessage.AccountId, chatCode, senderChunks, contentChunks, pendingMessage.Sender, pendingMessage.Content);
 
-        if (Plugin.Config.DatabaseBattleMessages || !message.Code.IsBattle())
+        var isBattle = message.Code.IsBattle();
+        var isCraftOrGather = message.Code.IsCraftOrGather();
+        if ((!isBattle && !isCraftOrGather) || (isBattle && Plugin.Config.DatabaseBattleMessages) || (isCraftOrGather && Plugin.Config.DatabaseGatherCraftMessages))
             Store.UpsertMessage(message);
 
         var currentTabId = Plugin.CurrentTab.Identifier;
