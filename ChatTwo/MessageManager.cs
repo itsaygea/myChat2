@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
 using ChatTwo.Code;
+using ChatTwo.GameFunctions.Types;
 using ChatTwo.Resources;
 using ChatTwo.Util;
 using Dalamud.Game.Chat;
@@ -212,6 +213,8 @@ public class MessageManager : IAsyncDisposable
     }
 
     public (SeString? Sender, SeString? Message) LastMessage = (null, null);
+    public TellTarget? LastTellTarget;
+
     private void ChatMessage(IChatMessage message)
     {
         LastMessage = (message.Sender, message.Message);
@@ -260,6 +263,34 @@ public class MessageManager : IAsyncDisposable
     private void ProcessMessage(PendingMessage pendingMessage)
     {
         var chatCode = new ChatCode(pendingMessage.LogKind, pendingMessage.SourceKind, pendingMessage.TargetKind);
+
+        // Quick-reply: track last tell target from incoming tells only.
+        // TellOutgoing is not tracked because the Sender SeString contains the local player,
+        // and the target is not reliably extractable from outgoing tell payloads.
+        try
+        {
+            if (chatCode.Type == ChatType.TellIncoming)
+            {
+                var playerPayload = pendingMessage.Sender.Payloads
+                    .OfType<Dalamud.Game.Text.SeStringHandling.Payloads.PlayerPayload>()
+                    .FirstOrDefault();
+                if (playerPayload != null
+                    && !string.IsNullOrWhiteSpace(playerPayload.PlayerName)
+                    && playerPayload.World.RowId > 0)
+                {
+                    LastTellTarget = new TellTarget(
+                        playerPayload.PlayerName,
+                        playerPayload.World.RowId,
+                        pendingMessage.ContentId,
+                        TellReason.Reply);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Plugin.Log.Warning("ChatTwo personal: failed to capture tell target: {0}", ex.Message);
+            LastTellTarget = null;
+        }
 
         NameFormatting? formatting = null;
         if (pendingMessage.Sender.Payloads.Count > 0)

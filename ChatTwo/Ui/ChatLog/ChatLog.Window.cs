@@ -29,6 +29,7 @@ public partial class ChatLog : Window, IChatWindow
 
     public bool TellSpecial;
     private readonly Stopwatch LastResize = new();
+    private TellTarget? _lastHandledTellTarget;
 
     // Used to detect channel changes for the webinterface
     public Chunk[] PreviousChannel = [];
@@ -405,9 +406,62 @@ public partial class ChatLog : Window, IChatWindow
 
         var buttonWidth = ImGuiUtil.CalcIconButtonSize().X;
         var showNovice = Plugin.Config.ShowNoviceNetwork && GameFunctions.GameFunctions.IsMentor();
-        var buttonsRight = 1 + (showNovice ? 1 : 0) + (Plugin.Config.ShowHideButton ? 1 : 0);
+        var showQuickReply = false;
+        string? quickReplyTarget = null;
+        try
+        {
+            var target = Plugin.MessageManager.LastTellTarget;
+            if (target?.IsSet() == true)
+            {
+                showQuickReply = true;
+                quickReplyTarget = target.ToTargetString();
+            }
+        }
+        catch
+        {
+            // silently suppress
+        }
+
+        // Auto-set tell target when a new tell arrives (MMO-style sticky target)
+        try
+        {
+            var latestTarget = Plugin.MessageManager.LastTellTarget;
+            if (latestTarget?.IsSet() == true && latestTarget != _lastHandledTellTarget)
+            {
+                _lastHandledTellTarget = latestTarget;
+                activeTab.CurrentChannel.TellTarget = latestTarget;
+                if (string.IsNullOrEmpty(InputHandler.ChatInput))
+                {
+                    InputHandler.ChatInput = $"/tell {latestTarget.ToTargetString()} ";
+                    InputHandler.Activate = true;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Plugin.Log.Error(ex, "ChatTwo personal: auto tell target error");
+        }
+
+        var buttonsRight = 1 + (showQuickReply ? 1 : 0) + (showNovice ? 1 : 0) + (Plugin.Config.ShowHideButton ? 1 : 0);
         var inputWidth = ImGui.GetContentRegionAvail().X - buttonWidth * buttonsRight - ImGui.GetStyle().ItemSpacing.X * buttonsRight;
         InputHandler.DrawInputArea(activeTab, inputWidth, ref TellSpecial);
+
+        if (showQuickReply)
+        {
+            try
+            {
+                ImGui.SameLine();
+                if (ImGuiUtil.IconButton(FontAwesomeIcon.Reply, tooltip: $"Quick reply to {quickReplyTarget}"))
+                {
+                    InputHandler.ChatInput = $"/tell {quickReplyTarget} ";
+                    InputHandler.Activate = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.Error(ex, "ChatTwo personal: quick reply UI error");
+            }
+        }
 
         ImGui.SameLine();
 
