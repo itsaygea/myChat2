@@ -121,14 +121,14 @@ public class SendHandler
                             var name = nameWorld[..atIndex];
                             var worldName = nameWorld[(atIndex + 1)..];
                             var worldRow = Sheets.WorldSheet.FirstOrDefault(w => w.Name.ToString().Equals(worldName, StringComparison.OrdinalIgnoreCase));
-                            if (worldRow != null)
+                            if (worldRow != default)
                                 LastSentTellTarget = new TellTarget(name, worldRow.RowId, 0, TellReason.Direct);
                         }
                         else
                         {
-                            var player = Plugin.ClientState.LocalPlayer;
-                            if (player != null)
-                                LastSentTellTarget = new TellTarget(nameWorld, player.HomeWorld.RowId, 0, TellReason.Direct);
+                            var worldId = Plugin.PlayerState.HomeWorld.ValueNullable?.RowId ?? 0;
+                            if (worldId > 0)
+                                LastSentTellTarget = new TellTarget(nameWorld, worldId, 0, TellReason.Direct);
                         }
                     }
                 }
