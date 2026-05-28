@@ -509,11 +509,12 @@ public sealed class PayloadHandler
             // Eureka, Bozja and Occult need special handling as tells work different
             if (!Sheets.IsInForay())
             {
-                InputHandler.ChatInput = $"/tell {player.PlayerName}";
                 if (world.Value.IsPublic)
-                    InputHandler.ChatInput += $"@{world.Value.Name}";
-
-                InputHandler.ChatInput += " ";
+                {
+                    var target = new TellTarget(player.PlayerName, world.Value.RowId, chunk.Message?.ContentId ?? 0, TellReason.Direct);
+                    InputHandler.SendHandler.LastSentTellTarget = target;
+                    Plugin.CurrentTab.CurrentChannel.TellTarget = target;
+                }
             }
             else if (validContentId)
             {
