@@ -29,7 +29,8 @@ public partial class ChatLog : Window, IChatWindow
 
     public bool TellSpecial;
     private readonly Stopwatch LastResize = new();
-    private TellTarget? _lastHandledTellTarget;
+    private readonly List<TellTarget> _recentTellTargets = [];
+    private const int MaxRecentTargets = 5;
 
     // Used to detect channel changes for the webinterface
     public Chunk[] PreviousChannel = [];
@@ -47,6 +48,18 @@ public partial class ChatLog : Window, IChatWindow
 
     public readonly List<bool> PopOutDocked = [];
     public readonly HashSet<Guid> PopOutWindows = [];
+
+    private void AddRecentTarget(TellTarget target)
+    {
+        for (var i = _recentTellTargets.Count - 1; i >= 0; i--)
+        {
+            if (_recentTellTargets[i].CompareNames(target))
+                _recentTellTargets.RemoveAt(i);
+        }
+        _recentTellTargets.Insert(0, target);
+        while (_recentTellTargets.Count > MaxRecentTargets)
+            _recentTellTargets.RemoveAt(_recentTellTargets.Count - 1);
+    }
 
     public ChatLog(Plugin plugin) : base($"{Plugin.PluginName}###chat2")
     {
@@ -426,15 +439,11 @@ public partial class ChatLog : Window, IChatWindow
         try
         {
             var latestTarget = Plugin.MessageManager.LastTellTarget;
-            if (latestTarget?.IsSet() == true && latestTarget != _lastHandledTellTarget)
+            if (latestTarget?.IsSet() == true)
             {
-                _lastHandledTellTarget = latestTarget;
-                activeTab.CurrentChannel.TellTarget = latestTarget;
-                if (string.IsNullOrEmpty(InputHandler.ChatInput))
-                {
-                    InputHandler.ChatInput = $"/tell {latestTarget.ToTargetString()} ";
-                    InputHandler.Activate = true;
-                }
+                AddRecentTarget(latestTarget);
+                if (!latestTarget.CompareNames(activeTab.CurrentChannel.TellTarget ?? TellTarget.Empty()))
+                    activeTab.CurrentChannel.TellTarget = latestTarget;
             }
         }
         catch (Exception ex)
@@ -442,8 +451,39 @@ public partial class ChatLog : Window, IChatWindow
             Plugin.Log.Error(ex, "ChatTwo personal: auto tell target error");
         }
 
+        // Tell target dropdown
+        var tellDropdownWidth = 0f;
+        try
+        {
+            var currentTarget = activeTab.CurrentChannel.TellTarget;
+            if (currentTarget?.IsSet() == true && _recentTellTargets.Count > 0)
+            {
+                ImGui.SameLine();
+                var displayName = currentTarget.ToTargetString();
+                tellDropdownWidth = Math.Clamp(ImGui.CalcTextSize(displayName).X + 40f, 80f, 200f);
+                ImGui.SetNextItemWidth(tellDropdownWidth);
+                if (ImGui.BeginCombo("##tell-target", displayName, ImGuiComboFlags.NoArrowButton | ImGuiComboFlags.HeightLarge))
+                {
+                    foreach (var target in _recentTellTargets)
+                    {
+                        if (!target.IsSet()) continue;
+                        var selected = target.CompareNames(currentTarget);
+                        if (ImGui.Selectable(target.ToTargetString(), selected))
+                            activeTab.CurrentChannel.TellTarget = target;
+                        if (selected)
+                            ImGui.SetItemDefaultFocus();
+                    }
+                    ImGui.EndCombo();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Plugin.Log.Error(ex, "ChatTwo personal: tell target dropdown error");
+        }
+
         var buttonsRight = 1 + (showQuickReply ? 1 : 0) + (showNovice ? 1 : 0) + (Plugin.Config.ShowHideButton ? 1 : 0);
-        var inputWidth = ImGui.GetContentRegionAvail().X - buttonWidth * buttonsRight - ImGui.GetStyle().ItemSpacing.X * buttonsRight;
+        var inputWidth = ImGui.GetContentRegionAvail().X - buttonWidth * buttonsRight - ImGui.GetStyle().ItemSpacing.X * buttonsRight - (tellDropdownWidth > 0 ? tellDropdownWidth + ImGui.GetStyle().ItemSpacing.X : 0);
         InputHandler.DrawInputArea(activeTab, inputWidth, ref TellSpecial);
 
         if (showQuickReply)
@@ -453,8 +493,16 @@ public partial class ChatLog : Window, IChatWindow
                 ImGui.SameLine();
                 if (ImGuiUtil.IconButton(FontAwesomeIcon.Reply, tooltip: $"Quick reply to {quickReplyTarget}"))
                 {
-                    InputHandler.ChatInput = $"/tell {quickReplyTarget} ";
-                    InputHandler.Activate = true;
+                    var qrTarget = _recentTellTargets.FirstOrDefault(t => t.ToTargetString() == quickReplyTarget);
+                    if (qrTarget != null)
+                    {
+                        activeTab.CurrentChannel.TellTarget = qrTarget;
+                        AddRecentTarget(qrTarget);
+                    }
+                    else if (Plugin.MessageManager.LastTellTarget?.IsSet() == true)
+                    {
+                        activeTab.CurrentChannel.TellTarget = Plugin.MessageManager.LastTellTarget;
+                    }
                 }
             }
             catch (Exception ex)
