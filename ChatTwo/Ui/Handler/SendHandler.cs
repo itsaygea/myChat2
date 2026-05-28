@@ -16,6 +16,8 @@ public class SendHandler
     private string Message = string.Empty;
     private bool TellSpecialUnused;
 
+    public TellTarget? LastSentTellTarget;
+
     public SendHandler(Plugin plugin)
     {
         Plugin = plugin;
@@ -69,6 +71,7 @@ public class SendHandler
 
                         ChatBox.SendMessageUnsafe(tellBytes);
 
+                        LastSentTellTarget = target;
                         activeTab.CurrentChannel.ResetTempChannel();
                         chatInput = string.Empty;
                         return;
@@ -85,6 +88,7 @@ public class SendHandler
                         AutoTranslate.ReplaceWithPayload(ref tellBytes);
 
                         Plugin.Functions.Chat.SendTell(reason, target.ContentId, target.Name, (ushort) world.RowId, tellBytes, trimmed);
+                        LastSentTellTarget = target;
                     }
 
                     activeTab.CurrentChannel.ResetTempChannel();
@@ -100,6 +104,39 @@ public class SendHandler
 
             var bytes = Encoding.UTF8.GetBytes(trimmed);
             AutoTranslate.ReplaceWithPayload(ref bytes);
+
+            // Track /tell commands for the target dropdown
+            try
+            {
+                if (trimmed.StartsWith("/tell ", StringComparison.OrdinalIgnoreCase))
+                {
+                    var rest = trimmed.AsSpan(6);
+                    var spaceIdx = rest.IndexOf(' ');
+                    if (spaceIdx > 0)
+                    {
+                        var nameWorld = rest[..spaceIdx].ToString();
+                        var atIndex = nameWorld.IndexOf('@');
+                        if (atIndex > 0)
+                        {
+                            var name = nameWorld[..atIndex];
+                            var worldName = nameWorld[(atIndex + 1)..];
+                            var worldRow = Sheets.WorldSheet.FirstOrDefault(w => w.Name.ToString().Equals(worldName, StringComparison.OrdinalIgnoreCase));
+                            if (worldRow != null)
+                                LastSentTellTarget = new TellTarget(name, worldRow.RowId, 0, TellReason.Direct);
+                        }
+                        else
+                        {
+                            var player = Plugin.ClientState.LocalPlayer;
+                            if (player != null)
+                                LastSentTellTarget = new TellTarget(nameWorld, player.HomeWorld.RowId, 0, TellReason.Direct);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // parsing failed, don't block the send
+            }
 
             ChatBox.SendMessageUnsafe(bytes);
         }

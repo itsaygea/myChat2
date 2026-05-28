@@ -445,6 +445,14 @@ public partial class ChatLog : Window, IChatWindow
                 if (!latestTarget.CompareNames(activeTab.CurrentChannel.TellTarget ?? TellTarget.Empty()))
                     activeTab.CurrentChannel.TellTarget = latestTarget;
             }
+
+            // Also track outgoing tells from SendHandler
+            var sentTarget = InputHandler.SendHandler.LastSentTellTarget;
+            if (sentTarget?.IsSet() == true)
+            {
+                AddRecentTarget(sentTarget);
+                InputHandler.SendHandler.LastSentTellTarget = null;
+            }
         }
         catch (Exception ex)
         {
