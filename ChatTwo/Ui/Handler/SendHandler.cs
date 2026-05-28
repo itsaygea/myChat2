@@ -121,7 +121,7 @@ public class SendHandler
                             var name = nameWorld[..atIndex];
                             var worldName = nameWorld[(atIndex + 1)..];
                             var worldRow = Sheets.WorldSheet.FirstOrDefault(w => w.Name.ToString().Equals(worldName, StringComparison.OrdinalIgnoreCase));
-                            if (worldRow != default)
+                            if (worldRow.RowId != 0)
                                 LastSentTellTarget = new TellTarget(name, worldRow.RowId, 0, TellReason.Direct);
                         }
                         else
