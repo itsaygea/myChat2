@@ -125,18 +125,33 @@ public partial class ChatLog : Window, IChatWindow
             return;
         }
 
-        if (args.AddIfNotPresent != null && !InputHandler.ChatInput.Contains(args.AddIfNotPresent))
+        // On fixed Tell tabs, /tell commands populate the dropdown — don't fill the input
+        var isFixedTell = Plugin.CurrentTab.Channel == InputChannel.Tell;
+        var skipAdd = isFixedTell && args.AddIfNotPresent?.StartsWith("/tell ", StringComparison.OrdinalIgnoreCase) == true;
+        var skipInput = isFixedTell && args.Input?.StartsWith("/tell ", StringComparison.OrdinalIgnoreCase) == true;
+
+        if (skipAdd || skipInput)
         {
-            // Replace the full chat input if it's a command
+            // Target was already set by SetContextTellTarget hook; add to recent list
+            try
+            {
+                var t = Plugin.CurrentTab.CurrentChannel.TellTarget;
+                if (t?.IsSet() == true)
+                    AddRecentTarget(t);
+            }
+            catch { }
+        }
+
+        if (!skipAdd && args.AddIfNotPresent != null && !InputHandler.ChatInput.Contains(args.AddIfNotPresent))
+        {
             if (args.AddIfNotPresent.StartsWith('/'))
                 InputHandler.ChatInput = args.AddIfNotPresent;
             else
                 InputHandler.ChatInput += args.AddIfNotPresent;
         }
 
-        if (args.Input != null)
+        if (!skipInput && args.Input != null)
         {
-            // Replace the full chat input if it's a command
             if (args.Input.StartsWith('/'))
                 InputHandler.ChatInput = args.Input;
             else
@@ -224,7 +239,7 @@ public partial class ChatLog : Window, IChatWindow
             }
         }
 
-        if (info.Text != null && InputHandler.ChatInput.Length == 0)
+        if (info.Text != null && InputHandler.ChatInput.Length == 0 && !(isFixedTell && info.Text.StartsWith("/tell ", StringComparison.OrdinalIgnoreCase)))
             InputHandler.ChatInput = info.Text;
     }
 
