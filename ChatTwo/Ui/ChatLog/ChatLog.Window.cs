@@ -132,14 +132,49 @@ public partial class ChatLog : Window, IChatWindow
 
         if (skipAdd || skipInput)
         {
-            // Target was already set by SetContextTellTarget hook; add to recent list
             try
             {
-                var t = Plugin.CurrentTab.CurrentChannel.TellTarget;
+                // Check TellTarget first, then TempTellTarget (game hook may set either)
+                var t = Plugin.CurrentTab.CurrentChannel.TellTarget
+                    ?? Plugin.CurrentTab.CurrentChannel.TempTellTarget;
+
+                if (t?.IsSet() != true)
+                {
+                    // Fallback: parse target from the /tell text itself
+                    var tellText = (args.AddIfNotPresent ?? args.Input ?? "").Trim();
+                    if (tellText.StartsWith("/tell ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var rest = tellText.AsSpan(6);
+                        var spaceIdx = rest.IndexOf(' ');
+                        var namePart = spaceIdx > 0 ? rest[..spaceIdx].ToString() : rest.ToString();
+                        var atIndex = namePart.IndexOf('@');
+                        if (atIndex > 0)
+                        {
+                            var name = namePart[..atIndex];
+                            var worldName = namePart[(atIndex + 1)..];
+                            var worldRow = Sheets.WorldSheet.FirstOrDefault(w => w.Name.ToString().Equals(worldName, StringComparison.OrdinalIgnoreCase));
+                            if (worldRow.RowId != 0)
+                                t = new TellTarget(name, worldRow.RowId, 0, TellReason.Direct);
+                        }
+                        else
+                        {
+                            var worldId = Plugin.PlayerState.HomeWorld.ValueNullable?.RowId ?? 0;
+                            if (worldId > 0)
+                                t = new TellTarget(namePart, worldId, 0, TellReason.Direct);
+                        }
+                    }
+                }
+
                 if (t?.IsSet() == true)
+                {
+                    Plugin.CurrentTab.CurrentChannel.TellTarget = t;
                     AddRecentTarget(t);
+                }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Plugin.Log.Error(ex, "ChatTwo personal: tell target intercept error");
+            }
         }
 
         if (!skipAdd && args.AddIfNotPresent != null && !InputHandler.ChatInput.Contains(args.AddIfNotPresent))
