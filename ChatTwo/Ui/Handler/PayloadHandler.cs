@@ -513,7 +513,7 @@ public sealed class PayloadHandler
                 {
                     var target = new TellTarget(player.PlayerName, world.Value.RowId, chunk.Message?.ContentId ?? 0, TellReason.Direct);
                     InputHandler.SendHandler.LastSentTellTarget = target;
-                    Plugin.CurrentTab.CurrentChannel.TellTarget = target;
+                    InputHandler.Plugin.CurrentTab.CurrentChannel.TellTarget = target;
                 }
             }
             else if (validContentId)
