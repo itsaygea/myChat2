@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Text;
 using ChatTwo.Code;
 using ChatTwo.GameFunctions.Types;
 using ChatTwo.Resources;
@@ -184,10 +185,14 @@ public sealed class PayloadHandler
             return string.Empty;
 
         var chunks = withSender ? message.Sender.Concat(message.Content) : message.Content;
-        return chunks.Where(chunk => chunk is TextChunk)
-            .Cast<TextChunk>()
-            .Select(text => text.Content)
-            .Aggregate(string.Concat);
+        var sb = new StringBuilder();
+        foreach (var chunk in chunks)
+        {
+            if (chunk is TextChunk text)
+                sb.Append(text.Content);
+        }
+
+        return sb.ToString();
     }
 
     public unsafe void Click(Chunk chunk, Payload? payload, ImGuiMouseButton button)

@@ -34,6 +34,10 @@ public partial class Message
     public Dictionary<Guid, float?> Height { get; } = new();
     public Dictionary<Guid, bool> IsVisible { get; } = new();
 
+    // Cached local time (avoids per-frame ToLocalTime() conversion)
+    [NonSerialized] private DateTime? _localTime;
+    public DateTime LocalTime => _localTime ??= Date.ToLocalTime();
+
     public Message(ulong receiver, ulong contentId, ulong accountId, ChatCode code, List<Chunk> sender, List<Chunk> content, SeString senderSource, SeString contentSource)
     {
         var extraChatChannel = ExtractExtraChatChannel(contentSource);
@@ -103,15 +107,18 @@ public partial class Message
     private int GenerateHash()
     {
         var hash = SortCodeV2.GetHashCode()
-                   ^ ExtraChatChannel.GetHashCode()
-                   ^ string.Join("", Sender.Select(c => c.StringValue())).GetHashCode()
-                   ^ string.Join("", Content.Select(c => c.StringValue())).GetHashCode();
+                   ^ ExtraChatChannel.GetHashCode();
+
+        foreach (var c in Sender)
+            hash ^= c.StringValue().GetHashCode();
+
+        foreach (var c in Content)
+            hash ^= c.StringValue().GetHashCode();
 
         if (Plugin.Config.CollapseKeepUniqueLinks)
         {
-            // Hash the link too for something like DeathRecap where the message is the same
-            // but the link is different
-            hash ^= string.Join("", Content.Select(c => c.Link?.GetHashCode())).GetHashCode();
+            foreach (var c in Content)
+                hash ^= c.Link?.GetHashCode() ?? 0;
         }
 
         return hash;

@@ -10,6 +10,7 @@ namespace ChatTwo.Ui.Handler;
 
 public class ChunkHandler
 {
+    private static readonly Dictionary<uint, Vector4> ColorCache = new();
     private readonly Plugin Plugin;
 
     public ChunkHandler(Plugin plugin)
@@ -104,9 +105,16 @@ public class ChunkHandler
         if (color == null && text.FallbackColor != null)
         {
             var type = text.FallbackColor.Value;
-            color = Plugin.Config.ChatColours.TryGetValue(type, out var col)
-                ? ColourUtil.RgbaToVector4(col)
-                : ColourUtil.RgbaToVector4(type.DefaultColor());
+            var rawCol = Plugin.Config.ChatColours.TryGetValue(type, out var col)
+                ? col
+                : type.DefaultColor();
+            if (!ColorCache.TryGetValue(rawCol, out var cached))
+            {
+                cached = ColourUtil.RgbaToVector4(rawCol);
+                ColorCache[rawCol] = cached;
+            }
+
+            color = cached;
         }
 
         using var pushedColor = ImRaii.PushColor(ImGuiCol.Text, color);
