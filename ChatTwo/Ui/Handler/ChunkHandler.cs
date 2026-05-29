@@ -105,16 +105,30 @@ public class ChunkHandler
         if (color == null && text.FallbackColor != null)
         {
             var type = text.FallbackColor.Value;
-            var rawCol = Plugin.Config.ChatColours.TryGetValue(type, out var col)
-                ? col
-                : type.DefaultColor();
-            if (!ColorCache.TryGetValue(rawCol, out var cached))
+            if (Plugin.Config.ChatColours.TryGetValue(type, out var col))
             {
-                cached = ColourUtil.RgbaToVector4(rawCol);
-                ColorCache[rawCol] = cached;
-            }
+                if (!ColorCache.TryGetValue(col, out var cached))
+                {
+                    cached = ColourUtil.RgbaToVector4(col);
+                    ColorCache[col] = cached;
+                }
 
-            color = cached;
+                color = cached;
+            }
+            else
+            {
+                var defaultCol = type.DefaultColor();
+                if (defaultCol != null)
+                {
+                    if (!ColorCache.TryGetValue(defaultCol.Value, out var cached))
+                    {
+                        cached = ColourUtil.RgbaToVector4(defaultCol.Value);
+                        ColorCache[defaultCol.Value] = cached;
+                    }
+
+                    color = cached;
+                }
+            }
         }
 
         using var pushedColor = ImRaii.PushColor(ImGuiCol.Text, color);
