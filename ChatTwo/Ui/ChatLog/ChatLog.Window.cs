@@ -450,8 +450,8 @@ public partial class ChatLog : Window, IChatWindow
         using (ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero))
             DrawChannelName(activeTab);
 
-        // Fixed channel tab (e.g. Tell Outgoing) — replace disabled Comment button with tell target dropdown
-        if (activeTab.Channel is not null)
+        // Fixed Tell tab — replace disabled Comment button with tell target dropdown
+        if (activeTab.Channel == InputChannel.Tell)
         {
             try
             {
@@ -494,7 +494,7 @@ public partial class ChatLog : Window, IChatWindow
                 Plugin.Log.Error(ex, "ChatTwo personal: tell target dropdown error");
             }
         }
-        else
+        else if (activeTab.Channel is null)
         {
             // Normal tab — show channel picker button
             if (ImGuiUtil.IconButton(FontAwesomeIcon.Comment))
@@ -509,6 +509,14 @@ public partial class ChatLog : Window, IChatWindow
                             Plugin.Functions.Chat.SetChannelWithExtraChat(channel);
                 }
             }
+        }
+        else
+        {
+            // Non-Tell fixed channel tab (e.g. FC, Party) — show disabled Comment button
+            if (ImGuiUtil.IconButton(FontAwesomeIcon.Comment))
+            { }
+            if (ImGui.IsItemHovered())
+                ImGuiUtil.Tooltip(Language.ChatLog_SwitcherDisabled);
         }
 
         ImGui.SameLine();
