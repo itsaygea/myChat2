@@ -110,15 +110,15 @@ public partial class Message
                    ^ ExtraChatChannel.GetHashCode();
 
         foreach (var c in Sender)
-            hash ^= c.StringValue().GetHashCode();
+            hash = (hash * 31) ^ c.StringValue().GetHashCode();
 
         foreach (var c in Content)
-            hash ^= c.StringValue().GetHashCode();
+            hash = (hash * 31) ^ c.StringValue().GetHashCode();
 
         if (Plugin.Config.CollapseKeepUniqueLinks)
         {
             foreach (var c in Content)
-                hash ^= c.Link?.GetHashCode() ?? 0;
+                hash = (hash * 31) ^ (c.Link?.GetHashCode() ?? 0);
         }
 
         return hash;

@@ -10,6 +10,7 @@ namespace ChatTwo.Ui.Handler;
 
 public class ChunkHandler
 {
+    // Keyed by uint color value (not ChatType), so stale entries are orphaned harmlessly when users change colors
     private static readonly Dictionary<uint, Vector4> ColorCache = new();
     private readonly Plugin Plugin;
 

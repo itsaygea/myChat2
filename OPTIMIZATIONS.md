@@ -114,20 +114,20 @@ var hash = SortCodeV2.GetHashCode()
            ^ string.Join("", Content.Select(c => c.StringValue())).GetHashCode();
 ```
 
-**After:** XOR-hash each chunk's string individually in a loop — zero intermediate strings:
+**After:** Rolling hash (`hash * 31`) per chunk — zero intermediate strings, order-sensitive:
 
 ```csharp
 var hash = SortCodeV2.GetHashCode()
            ^ ExtraChatChannel.GetHashCode();
 
 foreach (var c in Sender)
-    hash ^= c.StringValue().GetHashCode();
+    hash = (hash * 31) ^ c.StringValue().GetHashCode();
 
 foreach (var c in Content)
-    hash ^= c.StringValue().GetHashCode();
+    hash = (hash * 31) ^ c.StringValue().GetHashCode();
 ```
 
-**Why this is correct:** XOR is commutative and associative — the same set of chunks produces the same combined hash. The hash is used only for deduplication equality, so the specific bit pattern doesn't matter as long as it's deterministic.
+**Why this is correct:** The `hash * 31` rolling multiplier makes the hash order-dependent (standard pattern from Java's `String.hashCode`). This avoids the XOR cancellation problem where identical chunks would cancel each other out (`X ^ X = 0`), which caused false hash collisions and made `CollapseDuplicateMessages` incorrectly hide different emotes as duplicates.
 
 **Benefit:** Eliminates ~4 string allocations + 4 LINQ enumerator allocations per message. Under heavy chat (S-rank trains, hunt bridges), this adds up fast.
 
