@@ -31,6 +31,7 @@ public partial class ChatLog : Window, IChatWindow
     private readonly Stopwatch LastResize = new();
     private readonly List<TellTarget> _recentTellTargets = [];
     private const int MaxRecentTargets = 5;
+    private TellTarget? _lastHandledTellTarget;
 
     // Used to detect channel changes for the webinterface
     public Chunk[] PreviousChannel = [];
@@ -439,11 +440,11 @@ public partial class ChatLog : Window, IChatWindow
         try
         {
             var latestTarget = Plugin.MessageManager.LastTellTarget;
-            if (latestTarget?.IsSet() == true)
+            if (latestTarget?.IsSet() == true && !latestTarget.CompareNames(_lastHandledTellTarget ?? TellTarget.Empty()))
             {
+                _lastHandledTellTarget = latestTarget;
                 AddRecentTarget(latestTarget);
-                if (!latestTarget.CompareNames(activeTab.CurrentChannel.TellTarget ?? TellTarget.Empty()))
-                    activeTab.CurrentChannel.TellTarget = latestTarget;
+                activeTab.CurrentChannel.TellTarget = latestTarget;
             }
 
             // Also track outgoing tells from SendHandler
