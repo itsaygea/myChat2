@@ -107,26 +107,26 @@ public class ChunkHandler
             var type = text.FallbackColor.Value;
             if (Plugin.Config.ChatColours.TryGetValue(type, out var col))
             {
-                if (!ColorCache.TryGetValue(col, out var cached))
+                if (!ColorCache.TryGetValue(col, out var cachedCol))
                 {
-                    cached = ColourUtil.RgbaToVector4(col);
-                    ColorCache[col] = cached;
+                    cachedCol = ColourUtil.RgbaToVector4(col) ?? Vector4.Zero;
+                    ColorCache[col] = cachedCol;
                 }
 
-                color = cached;
+                color = cachedCol;
             }
             else
             {
                 var defaultCol = type.DefaultColor();
                 if (defaultCol != null)
                 {
-                    if (!ColorCache.TryGetValue(defaultCol.Value, out var cached))
+                    if (!ColorCache.TryGetValue(defaultCol.Value, out var cachedDefault))
                     {
-                        cached = ColourUtil.RgbaToVector4(defaultCol.Value);
-                        ColorCache[defaultCol.Value] = cached;
+                        cachedDefault = ColourUtil.RgbaToVector4(defaultCol.Value) ?? Vector4.Zero;
+                        ColorCache[defaultCol.Value] = cachedDefault;
                     }
 
-                    color = cached;
+                    color = cachedDefault;
                 }
             }
         }
