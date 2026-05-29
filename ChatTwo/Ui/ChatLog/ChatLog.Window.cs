@@ -461,6 +461,15 @@ public partial class ChatLog : Window, IChatWindow
                 ImGui.SetNextItemWidth(dropWidth);
                 if (ImGui.BeginCombo("##tell-target", displayText, ImGuiComboFlags.NoArrowButton | ImGuiComboFlags.HeightLarge))
                 {
+                    // "Nobody" clears the active target but keeps recent list intact
+                    var nobodySelected = currentTarget?.IsSet() != true;
+                    if (ImGui.Selectable("Nobody", nobodySelected))
+                        activeTab.CurrentChannel.TellTarget = null;
+                    if (nobodySelected)
+                        ImGui.SetItemDefaultFocus();
+
+                    ImGui.Separator();
+
                     if (_recentTellTargets.Count == 0)
                     {
                         ImGui.Selectable("No Tells", false, ImGuiSelectableFlags.Disabled);
