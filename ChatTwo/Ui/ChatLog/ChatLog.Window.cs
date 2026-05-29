@@ -400,19 +400,55 @@ public partial class ChatLog : Window, IChatWindow
         using (ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero))
             DrawChannelName(activeTab);
 
-        if (ImGuiUtil.IconButton(FontAwesomeIcon.Comment) && activeTab.Channel is null)
-            ImGui.OpenPopup(ChatChannelPicker);
-
-        if (activeTab.Channel is not null && ImGui.IsItemHovered())
-            ImGuiUtil.Tooltip(Language.ChatLog_SwitcherDisabled);
-
-        using (var popup = ImRaii.Popup(ChatChannelPicker))
+        // Fixed channel tab (e.g. Tell Outgoing) — replace disabled Comment button with tell target dropdown
+        if (activeTab.Channel is not null)
         {
-            if (popup)
+            try
             {
-                foreach (var (name, channel) in GetValidChannels())
-                    if (ImGui.Selectable(name))
-                        Plugin.Functions.Chat.SetChannelWithExtraChat(channel);
+                var currentTarget = activeTab.CurrentChannel.TellTarget;
+                var displayText = currentTarget?.IsSet() == true ? currentTarget.ToTargetString() : "No Tells";
+                var dropWidth = Math.Clamp(ImGui.CalcTextSize(displayText).X + 40f, 80f, 200f);
+                ImGui.SetNextItemWidth(dropWidth);
+                if (ImGui.BeginCombo("##tell-target", displayText, ImGuiComboFlags.NoArrowButton | ImGuiComboFlags.HeightLarge))
+                {
+                    if (_recentTellTargets.Count == 0)
+                    {
+                        ImGui.Selectable("No Tells", false, ImGuiSelectableFlags.Disabled);
+                    }
+                    else
+                    {
+                        foreach (var target in _recentTellTargets)
+                        {
+                            if (!target.IsSet()) continue;
+                            var selected = currentTarget != null && target.CompareNames(currentTarget);
+                            if (ImGui.Selectable(target.ToTargetString(), selected))
+                                activeTab.CurrentChannel.TellTarget = target;
+                            if (selected)
+                                ImGui.SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui.EndCombo();
+                }
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.Error(ex, "ChatTwo personal: tell target dropdown error");
+            }
+        }
+        else
+        {
+            // Normal tab — show channel picker button
+            if (ImGuiUtil.IconButton(FontAwesomeIcon.Comment))
+                ImGui.OpenPopup(ChatChannelPicker);
+
+            using (var popup = ImRaii.Popup(ChatChannelPicker))
+            {
+                if (popup)
+                {
+                    foreach (var (name, channel) in GetValidChannels())
+                        if (ImGui.Selectable(name))
+                            Plugin.Functions.Chat.SetChannelWithExtraChat(channel);
+                }
             }
         }
 
@@ -460,39 +496,9 @@ public partial class ChatLog : Window, IChatWindow
             Plugin.Log.Error(ex, "ChatTwo personal: auto tell target error");
         }
 
-        // Tell target dropdown
-        var tellDropdownWidth = 0f;
-        try
-        {
-            var currentTarget = activeTab.CurrentChannel.TellTarget;
-            if (currentTarget?.IsSet() == true && _recentTellTargets.Count > 0)
-            {
-                ImGui.SameLine();
-                var displayName = currentTarget.ToTargetString();
-                tellDropdownWidth = Math.Clamp(ImGui.CalcTextSize(displayName).X + 40f, 80f, 200f);
-                ImGui.SetNextItemWidth(tellDropdownWidth);
-                if (ImGui.BeginCombo("##tell-target", displayName, ImGuiComboFlags.NoArrowButton | ImGuiComboFlags.HeightLarge))
-                {
-                    foreach (var target in _recentTellTargets)
-                    {
-                        if (!target.IsSet()) continue;
-                        var selected = target.CompareNames(currentTarget);
-                        if (ImGui.Selectable(target.ToTargetString(), selected))
-                            activeTab.CurrentChannel.TellTarget = target;
-                        if (selected)
-                            ImGui.SetItemDefaultFocus();
-                    }
-                    ImGui.EndCombo();
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Plugin.Log.Error(ex, "ChatTwo personal: tell target dropdown error");
-        }
 
         var buttonsRight = 1 + (showQuickReply ? 1 : 0) + (showNovice ? 1 : 0) + (Plugin.Config.ShowHideButton ? 1 : 0);
-        var inputWidth = ImGui.GetContentRegionAvail().X - buttonWidth * buttonsRight - ImGui.GetStyle().ItemSpacing.X * buttonsRight - (tellDropdownWidth > 0 ? tellDropdownWidth + ImGui.GetStyle().ItemSpacing.X : 0);
+        var inputWidth = ImGui.GetContentRegionAvail().X - buttonWidth * buttonsRight - ImGui.GetStyle().ItemSpacing.X * buttonsRight;
         InputHandler.DrawInputArea(activeTab, inputWidth, ref TellSpecial);
 
         if (showQuickReply)
