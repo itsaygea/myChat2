@@ -1,0 +1,53 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build ChatTwo/ChatTwo.csproj -c Release
+
+      - name: Find latest.zip
+        id: findzip
+        shell: bash
+        run: |
+          ZIP=$(find ChatTwo/bin/Release -name "latest.zip" -type f | head -1)
+          if [ -z "$ZIP" ]; then
+            echo "ERROR: latest.zip not found in build output"
+            ls -R ChatTwo/bin/Release/ || true
+            exit 1
+          fi
+          echo "zip=$ZIP" >> $GITHUB_OUTPUT
+          echo "Found: $ZIP"
+
+      - name: Delete old release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag: latest
+        continue-on-error: true
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        env:
+          SHA: ${{ github.sha }}
+        with:
+          tag: latest
+          name: Latest Build
+          body: "Auto-built from main @ ${SHA}"
+          files: ${{ steps.findzip.outputs.zip }}
