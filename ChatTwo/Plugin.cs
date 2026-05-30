@@ -21,7 +21,7 @@ namespace ChatTwo;
 // ReSharper disable once ClassNeverInstantiated.Global
 public sealed class Plugin : IDalamudPlugin
 {
-    public const string PluginName = "Chat 2";
+    public const string PluginName = "Aygea's Chat2";
 
     [PluginService] public static IPluginLog Log { get; private set; } = null!;
     [PluginService] public static IDalamudPluginInterface Interface { get; private set; } = null!;
