@@ -31,9 +31,14 @@ public class TellTarget
         if (_worldName is not null)
             return _worldName;
 
-        _worldName = Sheets.WorldSheet.TryGetRow(World, out var worldRow)
-            ? worldRow.Name.ToString()
-            : string.Empty;
+        if (!Sheets.WorldSheet.TryGetRow(World, out var worldRow))
+        {
+            _worldName = string.Empty;
+            return _worldName;
+        }
+
+        var name = worldRow.Name.ToString();
+        _worldName = string.IsNullOrWhiteSpace(name) ? string.Empty : name.Trim();
         return _worldName;
     }
 

@@ -69,7 +69,7 @@ public class SendHandler
                         var tellBytes = Encoding.UTF8.GetBytes(trimmed);
                         AutoTranslate.ReplaceWithPayload(ref tellBytes);
 
-                        ChatBox.SendMessageUnsafe(tellBytes);
+                        Plugin.Functions.Chat.SendTellUsingCommandInner(tellBytes);
 
                         LastSentTellTarget = target;
                         activeTab.CurrentChannel.ResetTempChannel();
