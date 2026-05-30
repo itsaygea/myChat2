@@ -4,6 +4,7 @@ punchline: Whisper management with tell target dropdown and quick-reply.
 description: |-
   Personal fork of ChatTwo with quality-of-life improvements: tell target dropdown for easy whisper switching, cross-world aware target tracking, and performance optimizations. Based on Infiziert90/ChatTwo.
 repo_url: https://github.com/itsaygea/myChat2
+icon_url: https://raw.githubusercontent.com/itsaygea/DalamudPlugins/main/Aygea.png
 accepts_feedback: false
 tags:
   - Social
