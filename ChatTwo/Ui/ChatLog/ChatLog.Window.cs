@@ -150,9 +150,31 @@ public partial class ChatLog : Window, IChatWindow
                     if (tellText.StartsWith("/tell ", StringComparison.OrdinalIgnoreCase))
                     {
                         var rest = tellText.AsSpan(6);
-                        var spaceIdx = rest.IndexOf(' ');
-                        var namePart = spaceIdx > 0 ? rest[..spaceIdx].ToString() : rest.ToString();
-                        var atIndex = namePart.IndexOf('@');
+                        // FFXIV names contain spaces ("First Last"), so find the @ first,
+                        // then find the space after the world name to split name@world from message
+                        var atIndex = rest.IndexOf('@');
+                        int spaceIdx;
+                        string namePart;
+                        if (atIndex > 0)
+                        {
+                            // Everything from @ to next space is the world name
+                            var afterAt = rest[(atIndex + 1)..];
+                            var worldEnd = afterAt.IndexOf(' ');
+                            if (worldEnd > 0)
+                            {
+                                namePart = rest[..(atIndex + 1 + worldEnd)].ToString();
+                            }
+                            else
+                            {
+                                namePart = rest.ToString();
+                            }
+                        }
+                        else
+                        {
+                            spaceIdx = rest.IndexOf(' ');
+                            namePart = spaceIdx > 0 ? rest[..spaceIdx].ToString() : rest.ToString();
+                        }
+                        atIndex = namePart.IndexOf('@');
                         if (atIndex > 0)
                         {
                             var name = namePart[..atIndex];

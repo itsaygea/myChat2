@@ -116,25 +116,38 @@ public class SendHandler
                 if (trimmed.StartsWith("/tell ", StringComparison.OrdinalIgnoreCase))
                 {
                     var rest = trimmed.AsSpan(6);
-                    var spaceIdx = rest.IndexOf(' ');
-                    if (spaceIdx > 0)
+                    // FFXIV names contain spaces ("First Last"), so find @ first,
+                    // then find the space after the world name to split name@world from message
+                    var atIndex = rest.IndexOf('@');
+                    string nameWorld;
+                    if (atIndex > 0)
                     {
-                        var nameWorld = rest[..spaceIdx].ToString();
-                        var atIndex = nameWorld.IndexOf('@');
-                        if (atIndex > 0)
-                        {
-                            var name = nameWorld[..atIndex];
-                            var worldName = nameWorld[(atIndex + 1)..];
-                            var worldRow = Sheets.WorldSheet.FirstOrDefault(w => w.Name.ToString().Equals(worldName, StringComparison.OrdinalIgnoreCase));
-                            if (worldRow.RowId != 0)
-                                LastSentTellTarget = new TellTarget(name, worldRow.RowId, 0, TellReason.Direct);
-                        }
-                        else
-                        {
-                            var worldId = Plugin.PlayerState.HomeWorld.ValueNullable?.RowId ?? 0;
-                            if (worldId > 0)
-                                LastSentTellTarget = new TellTarget(nameWorld, worldId, 0, TellReason.Direct);
-                        }
+                        var afterAt = rest[(atIndex + 1)..];
+                        var worldEnd = afterAt.IndexOf(' ');
+                        nameWorld = worldEnd > 0
+                            ? rest[..(atIndex + 1 + worldEnd)].ToString()
+                            : rest.ToString();
+                    }
+                    else
+                    {
+                        var spaceIdx = rest.IndexOf(' ');
+                        nameWorld = spaceIdx > 0 ? rest[..spaceIdx].ToString() : rest.ToString();
+                    }
+
+                    atIndex = nameWorld.IndexOf('@');
+                    if (atIndex > 0)
+                    {
+                        var name = nameWorld[..atIndex];
+                        var worldName = nameWorld[(atIndex + 1)..];
+                        var worldRow = Sheets.WorldSheet.FirstOrDefault(w => w.Name.ToString().Equals(worldName, StringComparison.OrdinalIgnoreCase));
+                        if (worldRow.RowId != 0)
+                            LastSentTellTarget = new TellTarget(name, worldRow.RowId, 0, TellReason.Direct);
+                    }
+                    else
+                    {
+                        var worldId = Plugin.PlayerState.HomeWorld.ValueNullable?.RowId ?? 0;
+                        if (worldId > 0)
+                            LastSentTellTarget = new TellTarget(nameWorld, worldId, 0, TellReason.Direct);
                     }
                 }
             }
