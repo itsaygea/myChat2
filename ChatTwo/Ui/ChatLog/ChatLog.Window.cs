@@ -487,7 +487,10 @@ public partial class ChatLog : Window, IChatWindow
                     // "Nobody" clears the active target but keeps recent list intact
                     var nobodySelected = currentTarget?.IsSet() != true;
                     if (ImGui.Selectable("Nobody", nobodySelected))
+                    {
                         activeTab.CurrentChannel.TellTarget = null;
+                        activeTab.TellTarget = TellTarget.Empty();
+                    }
                     if (nobodySelected)
                         ImGui.SetItemDefaultFocus();
 
@@ -504,7 +507,10 @@ public partial class ChatLog : Window, IChatWindow
                             if (!target.IsSet()) continue;
                             var selected = currentTarget != null && target.CompareNames(currentTarget);
                             if (ImGui.Selectable(target.ToTargetString(), selected))
+                            {
                                 activeTab.CurrentChannel.TellTarget = target;
+                                activeTab.TellTarget = target;
+                            }
                             if (selected)
                                 ImGui.SetItemDefaultFocus();
                         }
