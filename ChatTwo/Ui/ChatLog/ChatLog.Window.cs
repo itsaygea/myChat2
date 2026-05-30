@@ -505,7 +505,7 @@ public partial class ChatLog : Window, IChatWindow
         {
             try
             {
-                var currentTarget = activeTab.CurrentChannel.TellTarget;
+                var currentTarget = activeTab.TellTarget.IsSet() ? activeTab.TellTarget : null;
                 var displayText = currentTarget?.IsSet() == true ? currentTarget.ToTargetString() : "No Tells";
                 var dropWidth = Math.Clamp(ImGui.CalcTextSize(displayText).X + 40f, 80f, 200f);
                 ImGui.SetNextItemWidth(dropWidth);

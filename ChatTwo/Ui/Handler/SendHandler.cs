@@ -59,7 +59,13 @@ public class SendHandler
 
             if (!trimmed.StartsWith('/'))
             {
-                var target = activeTab.TellTarget.IsSet() ? activeTab.TellTarget : activeTab.CurrentChannel.TempTellTarget ?? activeTab.CurrentChannel.TellTarget;
+                // Fixed Tell tabs use Tab.TellTarget (controlled by dropdown).
+                // Non-Tell tabs use the game's channel-level targets only.
+                TellTarget? target;
+                if (activeTab.Channel == InputChannel.Tell)
+                    target = activeTab.TellTarget.IsSet() ? activeTab.TellTarget : null;
+                else
+                    target = activeTab.CurrentChannel.TempTellTarget ?? activeTab.CurrentChannel.TellTarget;
                 if (target != null)
                 {
                     // ContentId 0 is a case where we can't directly send messages, so we send a /tell formatted message and let the game handle it
