@@ -47,7 +47,7 @@ jobs:
       - name: Delete old release
         uses: softprops/action-gh-release@v2
         with:
-          tag: latest
+          tag_name: latest
         continue-on-error: true
 
       - name: Create release
@@ -55,7 +55,7 @@ jobs:
         env:
           SHA: ${{ github.sha }}
         with:
-          tag: latest
+          tag_name: latest
           name: Latest Build
           body: "Auto-built from main @ ${SHA}"
           files: ${{ steps.findzip.outputs.zip }}
