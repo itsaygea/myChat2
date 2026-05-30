@@ -65,7 +65,11 @@ public class SendHandler
                     // ContentId 0 is a case where we can't directly send messages, so we send a /tell formatted message and let the game handle it
                     if (target.ContentId == 0)
                     {
-                        trimmed = $"/tell {target.ToTargetString()} {trimmed}";
+                        var targetStr = target.ToTargetString();
+                        trimmed = $"/tell {targetStr} {trimmed}";
+                        Plugin.Log.Debug($"[Tell Debug] Name='{target.Name}' World={target.World} WorldName='{target.ToWorldString()}' ContentId={target.ContentId}");
+                        Plugin.Log.Debug($"[Tell Debug] ToTargetString='{targetStr}'");
+                        Plugin.Log.Debug($"[Tell Debug] Full command: '{trimmed}'");
                         var tellBytes = Encoding.UTF8.GetBytes(trimmed);
                         AutoTranslate.ReplaceWithPayload(ref tellBytes);
 
@@ -79,6 +83,7 @@ public class SendHandler
 
                     var reason = target.Reason;
                     var world = Sheets.WorldSheet.GetRow(target.World);
+                    Plugin.Log.Debug($"[Tell Debug] SendTell path: Name='{target.Name}' World={target.World} ContentId={target.ContentId} IsPublic={world.IsPublic}");
                     if (world is { IsPublic: true })
                     {
                         if (reason == TellReason.Reply && GameFunctions.GameFunctions.GetFriends().Any(friend => friend.ContentId == target.ContentId))
