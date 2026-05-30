@@ -10,6 +10,8 @@ namespace ChatTwo.Ui.Handler;
 
 public class ChunkHandler
 {
+    // Keyed by uint color value (not ChatType), so stale entries are orphaned harmlessly when users change colors
+    private static readonly Dictionary<uint, Vector4> ColorCache = new();
     private readonly Plugin Plugin;
 
     public ChunkHandler(Plugin plugin)
@@ -104,9 +106,30 @@ public class ChunkHandler
         if (color == null && text.FallbackColor != null)
         {
             var type = text.FallbackColor.Value;
-            color = Plugin.Config.ChatColours.TryGetValue(type, out var col)
-                ? ColourUtil.RgbaToVector4(col)
-                : ColourUtil.RgbaToVector4(type.DefaultColor());
+            if (Plugin.Config.ChatColours.TryGetValue(type, out var col))
+            {
+                if (!ColorCache.TryGetValue(col, out var cachedCol))
+                {
+                    cachedCol = ColourUtil.RgbaToVector4(col) ?? Vector4.Zero;
+                    ColorCache[col] = cachedCol;
+                }
+
+                color = cachedCol;
+            }
+            else
+            {
+                var defaultCol = type.DefaultColor();
+                if (defaultCol != null)
+                {
+                    if (!ColorCache.TryGetValue(defaultCol.Value, out var cachedDefault))
+                    {
+                        cachedDefault = ColourUtil.RgbaToVector4(defaultCol.Value) ?? Vector4.Zero;
+                        ColorCache[defaultCol.Value] = cachedDefault;
+                    }
+
+                    color = cachedDefault;
+                }
+            }
         }
 
         using var pushedColor = ImRaii.PushColor(ImGuiCol.Text, color);

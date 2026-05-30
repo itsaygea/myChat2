@@ -24,6 +24,8 @@ public partial class ChatLog : Window, IChatWindow
 {
     private const string ChatChannelPicker = "chat-channel-picker";
 
+    private static readonly InputChannel[] AllInputChannels = Enum.GetValues<InputChannel>();
+
     private readonly Plugin Plugin;
     public readonly InputHandler InputHandler;
 
@@ -32,6 +34,9 @@ public partial class ChatLog : Window, IChatWindow
     private readonly List<TellTarget> _recentTellTargets = [];
     private const int MaxRecentTargets = 5;
     private TellTarget? _lastHandledTellTarget;
+
+    private StyleModel? _cachedStyle;
+    private string? _cachedStyleName;
 
     // Used to detect channel changes for the webinterface
     public Chunk[] PreviousChannel = [];
@@ -358,12 +363,14 @@ public partial class ChatLog : Window, IChatWindow
             return true;
         }
 
-        var currentTab = Plugin.CurrentTab; // local to avoid calling the getter repeatedly
-        var lastActivityTime = Plugin.Config.Tabs
-            .Where(tab => !tab.PopOut && (tab.UnhideOnActivity || tab == currentTab))
-            .Select(tab => tab.LastActivity)
-            .Append( InputHandler.LastActivityTime)
-            .Max();
+        var currentTab = Plugin.CurrentTab;
+        var lastActivityTime =  InputHandler.LastActivityTime;
+        foreach (var tab in Plugin.Config.Tabs)
+        {
+            if (!tab.PopOut && (tab.UnhideOnActivity || tab == currentTab) && tab.LastActivity > lastActivityTime)
+                lastActivityTime = tab.LastActivity;
+        }
+
         return  InputHandler.FrameTime - lastActivityTime <= 1000 * Plugin.Config.InactivityHideTimeout;
     }
 
@@ -373,7 +380,15 @@ public partial class ChatLog : Window, IChatWindow
             ImGui.SetWindowFocus(WindowName);
 
         if (Plugin.Config is { OverrideStyle: true, ChosenStyle: not null })
-            StyleModel.GetConfiguredStyles()?.FirstOrDefault(style => style.Name == Plugin.Config.ChosenStyle)?.Push();
+        {
+            if (_cachedStyleName != Plugin.Config.ChosenStyle)
+            {
+                _cachedStyle = StyleModel.GetConfiguredStyles()?.FirstOrDefault(style => style.Name == Plugin.Config.ChosenStyle);
+                _cachedStyleName = Plugin.Config.ChosenStyle;
+            }
+
+            _cachedStyle?.Push();
+        }
     }
 
     public override void PostDraw()
@@ -386,7 +401,15 @@ public partial class ChatLog : Window, IChatWindow
             InputHandler.Activate = false;
 
         if (Plugin.Config is { OverrideStyle: true, ChosenStyle: not null })
-            StyleModel.GetConfiguredStyles()?.FirstOrDefault(style => style.Name == Plugin.Config.ChosenStyle)?.Pop();
+        {
+            if (_cachedStyleName != Plugin.Config.ChosenStyle)
+            {
+                _cachedStyle = StyleModel.GetConfiguredStyles()?.FirstOrDefault(style => style.Name == Plugin.Config.ChosenStyle);
+                _cachedStyleName = Plugin.Config.ChosenStyle;
+            }
+
+            _cachedStyle?.Pop();
+        }
     }
 
     public override void OnClose()
@@ -620,7 +643,7 @@ public partial class ChatLog : Window, IChatWindow
     public Dictionary<string, InputChannel> GetValidChannels()
     {
         var channels = new Dictionary<string, InputChannel>();
-        foreach (var channel in Enum.GetValues<InputChannel>())
+        foreach (var channel in AllInputChannels)
         {
             if (!channel.IsValid())
                 continue;
@@ -946,7 +969,7 @@ public partial class ChatLog : Window, IChatWindow
 
                 if (tab.DisplayTimestamp)
                 {
-                    var localTime = message.Date.ToLocalTime();
+                    var localTime = message.LocalTime;
                     var timestamp = localTime.ToString("t", !Plugin.Config.Use24HourClock ? null : CultureInfo.CreateSpecificCulture("de-DE"));
                     if (isTable)
                     {
@@ -1159,7 +1182,7 @@ public partial class ChatLog : Window, IChatWindow
         if (PopOutDocked.Count != Plugin.Config.Tabs.Count)
         {
             PopOutDocked.Clear();
-            PopOutDocked.AddRange(Enumerable.Repeat(false, Plugin.Config.Tabs.Count));
+            PopOutDocked.AddRange(new bool[Plugin.Config.Tabs.Count]);
         }
 
         for (var i = 0; i < Plugin.Config.Tabs.Count; i++)

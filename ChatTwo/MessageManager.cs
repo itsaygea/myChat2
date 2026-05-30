@@ -312,13 +312,15 @@ public class MessageManager : IAsyncDisposable
         if ((!isBattle && !isCraftOrGather) || (isBattle && Plugin.Config.DatabaseBattleMessages) || (isCraftOrGather && Plugin.Config.DatabaseGatherCraftMessages))
             Store.UpsertMessage(message);
 
-        var currentTabId = Plugin.CurrentTab.Identifier;
-        var currentMatches = Plugin.CurrentTab.Matches(message);
+        var currentTab = Plugin.CurrentTab;
+        var currentTabId = currentTab.Identifier;
+        var currentMatches = currentTab.Matches(message);
         foreach (var tab in Plugin.Config.Tabs)
         {
-            var unread = !(tab.UnreadMode == UnreadMode.Unseen && Plugin.CurrentTab != tab && currentMatches);
+            var unread = !(tab.UnreadMode == UnreadMode.Unseen && currentTab != tab && currentMatches);
 
-            if (tab.Matches(message))
+            var matches = tab == currentTab ? currentMatches : tab.Matches(message);
+            if (matches)
             {
                 tab.AddMessage(message, unread);
 
@@ -373,16 +375,21 @@ public class MessageManager : IAsyncDisposable
         if (firstStringParam == -1 || secondStringParam == -1)
             return NameFormatting.Empty();
 
-        var before = formats
-            .GetRange(0, firstStringParam)
-            .Where(payload => payload.Type == ReadOnlySePayloadType.Text)
-            .Select(text => Encoding.UTF8.GetString(text.Body.Span));
-        var after = formats
-            .GetRange(firstStringParam + 1, secondStringParam - firstStringParam)
-            .Where(payload => payload.Type == ReadOnlySePayloadType.Text)
-            .Select(text => Encoding.UTF8.GetString(text.Body.Span)); // Can't use `ToString()` as it defaults to macro
+        var beforeSb = new StringBuilder();
+        foreach (var payload in formats.GetRange(0, firstStringParam))
+        {
+            if (payload.Type == ReadOnlySePayloadType.Text)
+                beforeSb.Append(Encoding.UTF8.GetString(payload.Body.Span));
+        }
 
-        var nameFormatting = NameFormatting.Of(string.Join("", before), string.Join("", after));
+        var afterSb = new StringBuilder();
+        foreach (var payload in formats.GetRange(firstStringParam + 1, secondStringParam - firstStringParam))
+        {
+            if (payload.Type == ReadOnlySePayloadType.Text)
+                afterSb.Append(Encoding.UTF8.GetString(payload.Body.Span)); // Can't use `ToString()` as it defaults to macro
+        }
+
+        var nameFormatting = NameFormatting.Of(beforeSb.ToString(), afterSb.ToString());
         Formats[type] = nameFormatting;
 
         return nameFormatting;

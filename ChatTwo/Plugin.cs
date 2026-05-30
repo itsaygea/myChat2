@@ -219,12 +219,12 @@ public sealed class Plugin : IDalamudPlugin
         TypingIpc?.Dispose();
         ExtraChat?.Dispose();
         Ipc?.Dispose();
-        MessageManager?.DisposeAsync().AsTask().Wait();
+        MessageManager?.DisposeAsync().GetAwaiter().GetResult();
         Functions?.Dispose();
         Commands?.Dispose();
 
         EmoteCache.Dispose();
-        ServerCore?.DisposeAsync().AsTask().Wait();
+        ServerCore?.DisposeAsync().GetAwaiter().GetResult();
     }
 
     private void Draw()

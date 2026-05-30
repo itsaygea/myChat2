@@ -13,6 +13,8 @@ public class TellTarget
     public ulong ContentId { get; set; }
     public TellReason Reason { get; private set; }
 
+    private string? _worldName;
+
     public TellTarget(string name, uint world, ulong contentId, TellReason reason)
     {
         Name = name;
@@ -25,7 +27,15 @@ public class TellTarget
         => Name.Length > 0 && World > 0;
 
     public string ToWorldString()
-        => Sheets.WorldSheet.TryGetRow(World, out var worldRow) ? worldRow.Name.ToString() : string.Empty;
+    {
+        if (_worldName is not null)
+            return _worldName;
+
+        _worldName = Sheets.WorldSheet.TryGetRow(World, out var worldRow)
+            ? worldRow.Name.ToString()
+            : string.Empty;
+        return _worldName;
+    }
 
     public string ToTargetString()
         => $"{Name}@{ToWorldString()}";
@@ -35,7 +45,8 @@ public class TellTarget
         if (!other.IsSet() || !IsSet())
             return false;
 
-        return ToTargetString().Equals(other.ToTargetString(), StringComparison.OrdinalIgnoreCase);
+        return Name.Equals(other.Name, StringComparison.OrdinalIgnoreCase)
+               && World == other.World;
     }
 
     public bool FromCharacterLink(ReadOnlySePayload payload)
