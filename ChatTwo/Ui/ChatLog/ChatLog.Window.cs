@@ -487,7 +487,12 @@ public partial class ChatLog : Window, IChatWindow
 
         // This tab has a fixed channel, so we force this channel to be always set as current
         if (activeTab.Channel is not null)
+        {
             activeTab.CurrentChannel.SetChannel(activeTab.Channel.Value);
+            // SetChannel replaces CurrentChannel, wiping TellTarget — restore from tab-level
+            if (activeTab.TellTarget.IsSet())
+                activeTab.CurrentChannel.TellTarget = activeTab.TellTarget;
+        }
 
         if (Plugin.Config.PreviewPosition is PreviewPosition.Inside && Plugin.InputPreview.IsDrawable)
             Plugin.InputPreview.DrawPreview();

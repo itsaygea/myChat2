@@ -1,7 +1,7 @@
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
     <PropertyGroup>
         <AssemblyName>AygeaChat2</AssemblyName>
-        <Version>1.40.2.2</Version>
+        <Version>1.40.2.3</Version>
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
