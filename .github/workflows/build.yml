@@ -44,6 +44,11 @@ jobs:
           echo "zip=$ZIP" >> $GITHUB_OUTPUT
           echo "Found: $ZIP"
 
+      - name: Add icon to zip
+        shell: bash
+        run: |
+          7z a '${{ steps.findzip.outputs.zip }}' ./ChatTwo/images/icon.png
+
       - name: Delete old release
         uses: softprops/action-gh-release@v2
         with:
