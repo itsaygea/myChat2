@@ -30,7 +30,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="images\" />
+      <None Include="images\icon.png" Pack="true" PackagePath="images\">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
     <!--This doesn't work until Plogon is updated to include NodeJS-->
